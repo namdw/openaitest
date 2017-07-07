@@ -19,6 +19,7 @@ class NN():
 		self.func = 'relu' # default function set to relu
 		self.epoch = 3
 		self.weight = 10
+		self.dropout = 1.0
 
 		## Initialize input variables
 		if (len(args)>0):
@@ -42,6 +43,8 @@ class NN():
 				self.epoch = int(value)
 			if(name=='weight'):
 				self.weight = int(value)
+			if(name=='dropout' and value < 1.0 and value > 0.0):
+				self.dropout = float(value)
 
 
 		## Initialize input, weights, and outputs of the network
@@ -102,20 +105,22 @@ class NN():
 			X = np.array([X])
 		a = X
 		for i in range(len(self.W)):
-			# print(np.dot(a, self.W[i]) / np.prod(a.shape))
 			z = np.dot(a / np.prod(a.shape), self.W[i]) + self.B[i] # z = a*w + b
 			if (i==len(self.W)-1):
 				return z
-			if(self.func=='sigmoid'):
-				a = self.sigmoid(z) # a = sigma(a*w)
-			elif(self.func=='relu'):
-				a = self.relu(z)
-			elif(self.func=='reul2'):
-				a = self.relu2(z)
-			elif(self.func=='lrelu'):
-				a = self.lrelu(z)
 			else:
-				a = self.relu(z)
+				if(self.func=='sigmoid'):
+					a = self.sigmoid(z) # a = sigma(a*w)
+				elif(self.func=='relu'):
+					a = self.relu(z)
+				elif(self.func=='reul2'):
+					a = self.relu2(z)
+				elif(self.func=='lrelu'):
+					a = self.lrelu(z)
+				else:
+					a = self.relu(z)
+				# if(self.dropout<1.0):
+				# 	a = np.multiply(a, np.random.binomial([p for p in np.ones(a.shape)], self.dropout)[0] * (1.0/(1-self.dropout)))
 		return a
 
 	def train(self, X, Y, *arg):
@@ -133,16 +138,20 @@ class NN():
 			Z[i] = np.dot(A[i] / np.prod(A[i].shape), self.W[i]) + self.B[i] # z = a*w + b
 			if (i==len(self.W)-1):
 				A[i+1] = Z[i]
-			elif(self.func=='sigmoid'):
-				A[i+1] = self.sigmoid(Z[i]) # a = sigma(a*w)
-			elif(self.func=='relu'):
-				A[i+1] = self.relu(Z[i])
-			elif(self.func=='relu2'):
-				A[i+1] = self.relu2(Z[i])
-			elif(self.func=='lrelu'):
-				A[i+1] = self.lrelu(Z[i])
 			else:
-				A[i+1] = self.relu(Z[i])
+				if(self.func=='sigmoid'):
+					A[i+1] = self.sigmoid(Z[i]) # a = sigma(a*w)
+				elif(self.func=='relu'):
+					A[i+1] = self.relu(Z[i])
+				elif(self.func=='relu2'):
+					A[i+1] = self.relu2(Z[i])
+				elif(self.func=='lrelu'):
+					A[i+1] = self.lrelu(Z[i])
+				else:
+					A[i+1] = self.relu(Z[i])
+				if(self.dropout<1.0):
+					A[i+1] = np.multiply(A[i+1], np.random.binomial([p for p in np.ones(A[i+1].shape)], self.dropout)[0] ) #* (1.0/(1-self.dropout)))
+		
 		D = [0]*(len(self.W)+1)
 		# D[0] = (A[-1]-Y) * A[-1]*(1-A[-1])
 		D[0] = (A[-1]-Y)

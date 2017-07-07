@@ -18,13 +18,11 @@ if os.path.isfile(filename):
 	cartpole_net = pickle.load(f)
 	f.close()
 else:
-	cartpole_net = base.NN(4,2,[5,10,5], func='relu2', weight=1)
+	cartpole_net = base.NN(4,2,[64,128,64], func='lrelu', weight=10.0, dropout=0.8)
 
 
 # Parameters for neural network 
 total_time = 0
-input_array = []
-output_array = []
 
 pass_score = 50
 num_pass = 0
@@ -32,12 +30,15 @@ epoch = 3
 
 TRAINING = False
 
-num_episodes = 100
+num_episodes = 1000
 if not TRAINING:
 	num_episodes = 10
 
 for i_episode in range(num_episodes):
+	# reset variables for a new episode 
 	observation = env.reset()
+	input_array = []
+	output_array = []
 	reward = 0
 	for t in range(200):
 		if not TRAINING:
@@ -63,7 +64,7 @@ for i_episode in range(num_episodes):
 				num_pass = num_pass + 1
 				for i in range(len(input_array)):
 					for _ in range(epoch):
-						cartpole_net.train(input_array[i], output_array[i],0.001)
+						cartpole_net.train(input_array[i], output_array[i],0.01)
 				print("Episode",i_episode,"finished after {} timesteps".format(t+1))
 			total_time = total_time + t + 1
 			break
