@@ -42,7 +42,10 @@ class NN():
 			if(name=='epoch'):
 				self.epoch = int(value)
 			if(name=='weight'):
-				self.weight = int(value)
+				if(value=='xavier' or value=='he'):
+					self.weight = value
+				else:
+					self.weight = int(value)
 			if(name=='dropout' and value < 1.0 and value > 0.0):
 				self.dropout = float(value)
 
@@ -50,21 +53,35 @@ class NN():
 		## Initialize input, weights, and outputs of the network
 		self.X = np.zeros([1, self.numX])
 		self.W = [0] * (len(self.numW)+1)
-		W_scale = self.weight
-		W_offset = W_scale/2.0
-		for i in range(len(self.W)):
-			if (i==0):
-				self.W[i] = W_scale*np.random.rand(self.numX, self.numW[i])-W_offset
-			elif (i==len(self.W)-1):
-				self.W[i] = W_scale*np.random.rand(self.numW[i-1], self.numY)-W_offset
-			else:
-				self.W[i] = W_scale*np.random.rand(self.numW[i-1], self.numW[i])-W_offset
 		self.B = [0] * (len(self.numW)+1)
-		for i in range(len(self.B)):
-			if (i==len(self.B)-1):
-				self.B[i] = W_scale*np.random.rand(1,self.numY)-W_offset
-			else:
-				self.B[i] = W_offset*np.random.rand(1,self.numW[i])-W_offset
+		if(self.weight=='xavier'):
+			for i in range(len(self.W)):
+				if (i==0):
+					self.W[i] = np.random.normal(0, 2/(self.numX+self.numY), (self.numX, self.numW[i]))
+				elif (i==len(self.W)-1):
+					self.W[i] = np.random.normal(0, 2/(self.numX+self.numY), (self.numW[i-1], self.numY))
+				else:
+					self.W[i] = np.random.normal(0, 2/(self.numX+self.numY),(self.numW[i-1], self.numW[i]))
+			for i in range(len(self.B)):
+				if (i==len(self.B)-1):
+					self.B[i] = np.random.normal(0, 2/(self.numX+self.numY), (1,self.numY))
+				else:
+					self.B[i] = np.random.normal(0, 2/(self.numX+self.numY), (1,self.numW[i]))
+		else:
+			W_scale = self.weight
+			W_offset = W_scale/2.0
+			for i in range(len(self.W)):
+				if (i==0):
+					self.W[i] = W_scale*np.random.rand(self.numX, self.numW[i])-W_offset
+				elif (i==len(self.W)-1):
+					self.W[i] = W_scale*np.random.rand(self.numW[i-1], self.numY)-W_offset
+				else:
+					self.W[i] = W_scale*np.random.rand(self.numW[i-1], self.numW[i])-W_offset
+			for i in range(len(self.B)):
+				if (i==len(self.B)-1):
+					self.B[i] = W_scale*np.random.rand(1,self.numY)-W_offset
+				else:
+					self.B[i] = W_offset*np.random.rand(1,self.numW[i])-W_offset
 		self.Y = np.zeros([self.numY,1])
 
 	'''
@@ -135,7 +152,7 @@ class NN():
 		Z = [0]*len(self.W)
 		A[0] = X
 		for i in range(len(self.W)):
-			Z[i] = np.dot(A[i] / np.prod(A[i].shape), self.W[i]) + self.B[i] # z = a*w + b
+			Z[i] = np.dot(A[i], self.W[i]) + self.B[i] # z = a*w + b
 			if (i==len(self.W)-1):
 				A[i+1] = Z[i]
 			else:
@@ -150,7 +167,8 @@ class NN():
 				else:
 					A[i+1] = self.relu(Z[i])
 				if(self.dropout<1.0):
-					A[i+1] = np.multiply(A[i+1], np.random.binomial([p for p in np.ones(A[i+1].shape)], self.dropout)[0] ) #* (1.0/(1-self.dropout)))
+					dropout_list = np.random.binomial([p for p in np.ones(A[i+1].shape)], self.dropout)
+					A[i+1] = np.multiply(A[i+1], dropout_list[0]) / np.sum(dropout_list) #* (1.0/(1-self.dropout)))
 		
 		D = [0]*(len(self.W)+1)
 		# D[0] = (A[-1]-Y) * A[-1]*(1-A[-1])
@@ -173,3 +191,11 @@ class NN():
 				D[i+1] = np.multiply(np.transpose(np.dot(self.W[-i-1], np.transpose(D[i]))), np.array([1 if element>0 else 0 for element in A[-2-i][0]]))
 			self.W[-1-i] = self.W[-1-i] - n * (np.dot(np.transpose(A[-2-i])/np.prod(A[-2-i].shape), D[i]))
 			self.B[-1-i] = self.B[-1-i] - n * D[i]
+
+
+class NNb():
+
+	def __init__(self):
+		pass
+
+	
